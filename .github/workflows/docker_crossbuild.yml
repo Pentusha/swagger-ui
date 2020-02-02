@@ -1,0 +1,39 @@
+name: Crossbuild
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  crossbuild:
+    name: Crossbuild docker image
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
+
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push docker image
+        run: |
+          docker buildx build \
+            --platform linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/s390x \
+            --output "type=image" \
+            --file ./Dockerfile \
+            --pull \
+            --push \
+            --tag pentusha/swagger-ui-crossbuild:latest \
+            --tag pentusha/swagger-ui-crossbuild:${GITHUB_SHA:0:7} \
+            .
